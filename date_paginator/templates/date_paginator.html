@@ -4,11 +4,9 @@
     </div>
     <div class="years">
         {% for year in page.years %}
-        <div class="span-1">
-            <a href="{{ year.get_absolute_url }}" {% ifequal page.year year %}class="selected"{% endifequal %}>
-                {{ year }}
-            </a>
-        </div>
+        <a href="{{ year.get_absolute_url }}" {% ifequal page.year year %}class="selected"{% endifequal %}>
+            {{ year }}
+        </a>
         {% endfor %}
     </div>
     <div class="months">
