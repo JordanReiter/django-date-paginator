@@ -134,6 +134,9 @@ class Day(DateComponent):
     def __repr__(self):
         return str(self.day)
 
+    def repr(self):
+        return repr(self)
+
     def date(self):
         return datetime.date(self.year, self.month, self.day)
 
@@ -154,6 +157,9 @@ class Month(DateComponent):
 
     def __repr__(self):
         return str(self.month)
+
+    def repr(self):
+        return repr(self)
 
     def days(self):
         return self.page.paginator.get_days_range(self.page, self.year, self.month)
@@ -176,6 +182,9 @@ class Year(DateComponent):
 
     def __repr__(self):
         return str(self.year)
+
+    def repr(self):
+        return repr(self)
 
     def months(self):
         return self.page.paginator.get_months_range(self.page, self.year)
