@@ -28,7 +28,7 @@ class PageSelector(object):
             self.page = 0
             self.year = today.year
             self.month = today.month
-            self.day = today.day
+            #self.day = today.day
             return
 
         if match is not None:
