@@ -6,24 +6,18 @@
     <div class="dates">
         <div class="years">
             {% for year in page.years %}
-            <a href="{{ year.get_absolute_url }}" {% ifequal page.year.repr year.repr %}class="selected"{% endifequal %}>
-                {{ year }}
-            </a>
+            <a href="{{ year.get_absolute_url }}{% if request.GET.urlencode %}?{% endif %}{{ request.GET.urlencode }}" {% ifequal page.year.repr year.repr %}class="selected"{% endifequal %}>{{ year }}</a>
             {% endfor %}
         </div>
         <div class="months">
             {% for month in page.year.months %}
-            <a href="{{ month.get_absolute_url }}" {% ifequal page.month.repr month.repr %}class="selected"{% endifequal %}>
-                {{ month.date|date:"N" }}
-            </a>
+            <a href="{{ month.get_absolute_url }}{% if request.GET.urlencode %}?{% endif %}{{ request.GET.urlencode }}" {% ifequal page.month.repr month.repr %}class="selected"{% endifequal %}>{{ month.date|date:"N" }}</a>
             {% endfor %}
         </div>
         {% if page.selector.month %}
         <div class="days">
             {% for day in page.month.days %}
-            <a href="{{ day.get_absolute_url }}" {% ifequal page.day.repr day.repr %}class="selected"{% endifequal %}>
-                {{ day }}
-            </a>
+            <a href="{{ day.get_absolute_url }}{% if request.GET.urlencode %}?{% endif %}{{ request.GET.urlencode }}" {% ifequal page.day.repr day.repr %}class="selected"{% endifequal %}>{{ day }}</a>
             {% endfor %}
         </div>
         {% endif %}
