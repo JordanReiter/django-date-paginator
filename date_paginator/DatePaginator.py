@@ -27,24 +27,49 @@ class PageSelector(object):
             self.objects_per_page = 60
             self.page = 0
             self.year = today.year
+            self.week_or_month_selector = 'm'
             self.month = today.month
             #self.day = today.day
-            return
+            #return
+        else:
+            if match is not None:
+                for k, v in match.groupdict().items():
+                    setattr(self, k, v)
 
-        if match is not None:
-            for k, v in match.groupdict().items():
-                setattr(self, k, v)
-
-        self.objects_per_page = int(self.objects_per_page)
-        self.page = int(self.page)
-        if hasattr(self, "week_or_month_selector"):
-            if self.week_or_month_selector == 'm':
-                self.month = self.week_or_month
-            if self.week_or_month_selector == 'w':
-                self.week = self.week_or_month
+            self.objects_per_page = int(self.objects_per_page)
+            self.page = int(self.page)
+            if hasattr(self, "week_or_month_selector"):
+                if self.week_or_month_selector == 'm':
+                    self.month = self.week_or_month
+                if self.week_or_month_selector == 'w':
+                    self.week = self.week_or_month
 
     def __repr__(self):
-        return self.selector
+        #return self.generate(**dict(self.__dict__))
+        if hasattr(self, "day"):
+            return "%d-%d-%d-%s%d-%d" % (
+                self.objects_per_page,
+                self.page,
+                self.year,
+                self.week_or_month_selector,
+                self.month,
+                self.day
+            )
+        if hasattr(self, "month"):
+            return "%d-%d-%d-%s%d" % (
+                self.objects_per_page,
+                self.page,
+                self.year,
+                self.week_or_month_selector,
+                self.month,
+            )
+        if hasattr(self, "month"):
+            return "%d-%d-%d" % (
+                self.objects_per_page,
+                self.page,
+                self.year,
+            )
+        return "unknown..."
 
 
     def is_valid(self):
@@ -304,6 +329,7 @@ class Page(object):
         self.objects = object_list
         self.selector = selector
         self.paginator = paginator
+        self._count = None
 
     def __repr__(self):
         try:
@@ -323,6 +349,9 @@ class Page(object):
 
         bottom = selector.page * selector.objects_per_page
         top = (selector.page + 1) * selector.objects_per_page
+
+        #objects = self.objects[bottom:top]
+        #return self.objects.model.objects.filter(pk__in=objects.values_list('pk', flat=True)).select_related()
         return self.objects[bottom:top]
     object_list = property(_object_list)
 
@@ -338,9 +367,11 @@ class Page(object):
         except:
             return None
 
-    def _count(self):
-        return len(self.objects)
-    count = property(_count)
+    def _get_count(self):
+        if not self._count:
+            self._count = len(self.objects)
+        return self._count
+    count = property(_get_count)
 
     def has_more(self):
         return (self.selector.page + 1) * self.selector.objects_per_page < self.count
