@@ -8,6 +8,7 @@ from django.core.urlresolvers import reverse
 class PageSelector(object):
     def __init__(self, selector):
         self.patterns = [
+            re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)$'),
             re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)-(?P<year>\d{4})$'),
             re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)-(?P<year>\d{4})-(?P<week_or_month_selector>[wm])(?P<week_or_month>\d{1,2})$'),
             re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)-(?P<year>\d{4})-(?P<week_or_month_selector>[m])(?P<week_or_month>\d{1,2})-(?P<day>\d{1,2})$'),
@@ -69,7 +70,10 @@ class PageSelector(object):
                 self.page,
                 self.year,
             )
-        return "unknown..."
+        return "%d-%d" % (
+            self.objects_per_page,
+            self.page,
+        )
 
 
     def is_valid(self):
@@ -342,7 +346,9 @@ class Page(object):
     years = property(_years)
 
     def year(self):
-        return Year(self.selector.year, self)
+        if hasattr(self.selector, "year"):
+            return Year(self.selector.year, self)
+        return None
 
     def _object_list(self):
         selector = self.selector
@@ -379,6 +385,15 @@ class Page(object):
     def remaining_objects(self):
         return self.count - self.selector.page * self.selector.objects_per_page
 
+    def get_selector(self):
+        return "%d-%d" % (
+            self.selector.objects_per_page,
+            self.selector.page,
+        )
+
+    def get_absolute_url_for_all(self):
+        return reverse(self.paginator.url_name, kwargs={ "selector": self.get_selector() })
+
     def get_absolute_url(self):
         if hasattr(self.selector, "day"):
             return self.day().get_absolute_url()
@@ -386,6 +401,7 @@ class Page(object):
             return self.month().get_absolute_url()
         if hasattr(self.selector, "year"):
             return self.year().get_absolute_url()
+        return self.get_absolute_url_for_all()
 
     def next_page(self):
         new_selector = self.selector
