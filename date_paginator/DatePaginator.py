@@ -1,6 +1,7 @@
 #! -*- coding: utf-8 -*-
 import re
 import datetime
+import calendar
 from django.utils.regex_helper import normalize
 from django.db.models.query import QuerySet
 from django.core.urlresolvers import reverse
@@ -243,14 +244,33 @@ class DatePaginator(object):
         object_list = self.object_list
         selector = PageSelector(selector_str)
 
-        filters = {}
+        filters = None
+
+        year = None
+        month = None
+        day = None
         if hasattr(selector, 'year'):
-            filters['%s__year' % self.attr] = selector.year
+            year = int(selector.year)
+            #filters['%s__year' % self.attr] = selector.year
         if hasattr(selector, 'month'):
-            filters['%s__month' % self.attr] = selector.month
+            month = int(selector.month)
+            #filters['%s__month' % self.attr] = selector.month
         if hasattr(selector, 'day'):
-            filters['%s__day' % self.attr] = selector.day
-        sub_object_list = object_list.filter(**filters)
+            day = int(selector.day)
+            #filters['%s__day' % self.attr] = selector.day
+
+        if day:
+            filters = { '%s__range' % self.attr: (datetime.date(year,month,day),datetime.date(year,month,day) + datetime.timedelta(days=1)) }
+        elif month:
+            month_start, month_end = calendar.monthrange(year, month)
+            filters = { '%s__range' % self.attr: (datetime.date(year,month,1), datetime.date(year,month,month_end) + datetime.timedelta(days=1)) }
+        elif year:
+            filters = { '%s__range' % self.attr: (datetime.date(year,1,1), datetime.date(year,12,31) + datetime.timedelta(days=1)) }
+
+        if filters:
+            sub_object_list = object_list.filter(**filters)
+        else:
+            sub_object_list = object_list
 
         return Page(sub_object_list, selector, self)
 
@@ -294,7 +314,7 @@ class DatePaginator(object):
                         d.month
                         for d in self.object_list.filter(
                             **{
-                                '%s__year' % self.attr: year
+                                '%s__range' % self.attr: (datetime.date(year,1,1), datetime.date(year, 12, 31) + datetime.timedelta(days=1))
                             }
                         ).dates(self.attr,
                                 'month',
@@ -307,6 +327,8 @@ class DatePaginator(object):
         return self._months
 
     def get_days_range(self, page, year, month):
+        month_start, month_end = calendar.monthrange(year, month)
+
         return [
             Day(year, month, day, page)
             for day in sorted(
@@ -314,8 +336,7 @@ class DatePaginator(object):
                     d.day
                     for d in self.object_list.filter(
                         **{
-                            '%s__year' % self.attr: year,
-                            '%s__month' % self.attr: month
+                            '%s__range' % self.attr: (datetime.date(year,month,1), datetime.date(year, month, month_end) + datetime.timedelta(days=1))
                         }
                     ).dates(self.attr,
                             'day',
@@ -375,7 +396,7 @@ class Page(object):
 
     def _get_count(self):
         if not self._count:
-            self._count = len(self.objects)
+            self._count = self.objects.count()
         return self._count
     count = property(_get_count)
 
