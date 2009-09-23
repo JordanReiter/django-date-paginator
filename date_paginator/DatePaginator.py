@@ -239,6 +239,7 @@ class DatePaginator(object):
         self._years = []
         self._months = []
         self.url_name = url_name
+        self.is_date_paginator = True
 
     def page(self, selector_str):
         object_list = self.object_list
@@ -251,13 +252,10 @@ class DatePaginator(object):
         day = None
         if hasattr(selector, 'year'):
             year = int(selector.year)
-            #filters['%s__year' % self.attr] = selector.year
         if hasattr(selector, 'month'):
             month = int(selector.month)
-            #filters['%s__month' % self.attr] = selector.month
         if hasattr(selector, 'day'):
             day = int(selector.day)
-            #filters['%s__day' % self.attr] = selector.day
 
         if day:
             filters = { '%s__range' % self.attr: (datetime.date(year,month,day),datetime.date(year,month,day) + datetime.timedelta(days=1)) }
@@ -272,10 +270,13 @@ class DatePaginator(object):
         else:
             sub_object_list = object_list
 
-        return Page(sub_object_list, selector, self)
+        self._page = Page(sub_object_list, selector, self)
+        return self._page
 
     def _get_count(self):
         "Returns the total number of objects, across all pages."
+        if hasattr(self, "_page"):
+            return self._page.count
         if self._count is None:
             try:
                 self._count = self.object_list.count()
@@ -293,7 +294,7 @@ class DatePaginator(object):
                 Year(year, page)
                 for year in sorted(
                     [
-                        d.year for d in self.object_list.dates(
+                        d.year for d in self.object_list.only(self.attr).dates(
                             self.attr,
                             'year',
                             order='DESC'
@@ -312,7 +313,7 @@ class DatePaginator(object):
                 for month in sorted(
                     [
                         d.month
-                        for d in self.object_list.filter(
+                        for d in self.object_list.only(self.attr).filter(
                             **{
                                 '%s__range' % self.attr: (datetime.date(year,1,1), datetime.date(year, 12, 31) + datetime.timedelta(days=1))
                             }
@@ -376,9 +377,6 @@ class Page(object):
 
         bottom = selector.page * selector.objects_per_page
         top = (selector.page + 1) * selector.objects_per_page
-
-        #objects = self.objects[bottom:top]
-        #return self.objects.model.objects.filter(pk__in=objects.values_list('pk', flat=True)).select_related()
         return self.objects[bottom:top]
     object_list = property(_object_list)
 
