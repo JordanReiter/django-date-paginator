@@ -7,7 +7,7 @@ from django.db.models.query import QuerySet
 from django.core.urlresolvers import reverse
 
 class PageSelector(object):
-    def __init__(self, selector):
+    def __init__(self, selector, default=None):
         self.patterns = [
             re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)$'),
             re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)-(?P<year>\d{4})$'),
@@ -15,6 +15,7 @@ class PageSelector(object):
             re.compile(r'^(?P<objects_per_page>\d+)-(?P<page>\d+)-(?P<year>\d{4})-(?P<week_or_month_selector>[m])(?P<week_or_month>\d{1,2})-(?P<day>\d{1,2})$'),
         ]
         self.selector = selector
+        self.default = default
         self.populate()
 
     def populate(self):
@@ -24,7 +25,7 @@ class PageSelector(object):
                 if match is not None:
                     break
         except TypeError:
-            today = datetime.date.today()
+            today = self.default or datetime.date.today()
 
             self.objects_per_page = 60
             self.page = 0
@@ -233,7 +234,7 @@ class DatePaginator(object):
     def __init__(self, object_list, attr, url_name):
         if not isinstance(object_list, QuerySet):
             raise Exception
-        self.object_list = object_list
+        self.all_object_list = self.object_list = object_list
         self.attr = attr
         self._count = None
         self._years = []
@@ -243,18 +244,18 @@ class DatePaginator(object):
 
     def page(self, selector_str):
         object_list = self.object_list
-        selector = PageSelector(selector_str)
+        selector = PageSelector(selector_str, default=getattr(self.object_list[0], self.attr))
 
         filters = None
 
         year = None
         month = None
         day = None
-        if hasattr(selector, 'year'):
+        if selector and hasattr(selector, 'year'):
             year = int(selector.year)
-        if hasattr(selector, 'month'):
+        if selector and hasattr(selector, 'month'):
             month = int(selector.month)
-        if hasattr(selector, 'day'):
+        if selector and hasattr(selector, 'day'):
             day = int(selector.day)
 
         if day:
@@ -287,6 +288,9 @@ class DatePaginator(object):
                 self._count = len(self.object_list)
         return self._count
     count = property(_get_count)
+
+    def get_total_count(self):
+        return self.all_object_list.count()
 
     def get_years_range(self, page):
         if not self._years:
