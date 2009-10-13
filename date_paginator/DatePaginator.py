@@ -244,7 +244,12 @@ class DatePaginator(object):
 
     def page(self, selector_str):
         object_list = self.object_list
-        selector = PageSelector(selector_str, default=getattr(self.object_list[0], self.attr))
+        try:
+            default = getattr(self.object_list[0], self.attr)
+        except IndexError:
+            default = datetime.datetime.today()
+
+        selector = PageSelector(selector_str, default=default)
 
         filters = None
 
